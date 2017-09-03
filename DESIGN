@@ -1,0 +1,24 @@
+Object per connection socket:
+* socket fd
+* buffer
+* processing policy
+
+Object per listening socket (templated on what type of new connection objects):
+* Reference to dispatcher object
+* socket fd
+* Constructor (will need an address/port number): call socket/bind/listen
+* HandleRead:
+** We got a new connection, so we:
+** Call accept
+** Create a new connection object
+** Call dispatcher's register method
+
+Dispatcher object (one per thread):
+* fdsets to pass to select
+* Map of fds to socket handler objects
+* register method
+* Main event loop (run method) that
+** Calls select
+** Sees what fds are available for reading
+** Calls methods in listening/connection socket objects
+** Does not normally return
