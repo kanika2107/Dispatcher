@@ -22,3 +22,5 @@ Dispatcher object (one per thread):
 ** Sees what fds are available for reading
 ** Calls methods in listening/connection socket objects
 ** Does not normally return
+
+Will add more later
