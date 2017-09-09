@@ -1,0 +1,34 @@
+Dispatcher Assignment1
+
+Design + Features:
+
+Dispatcher:
+
+->Maintains a vector of listeners.This is useful so that we can only keep timers for connection socket objects and not for listening socket objects(vector<int> listeners)
+->Has a unique ptr to a Singleton class(TimerHandler).This class is responsible for all the timer related functionality like maintaining the queue, updating the read and write timers, calling the callback functions of those connection objects whose timers have triggered.
+->register_socket(std::unique_ptr<Socket> socket):function puts this socket in a map called fds.We keep a unique ptr to the socket inside the map because we want the Dispatcher to own the socket such that when a connection closes, the dispacther can unregister the socket, which automatically calls its destructor.We pass by value here because we want Dispatcher to own this socket till end of function scope.
+->register_timer(int fd,std::unique_ptr<Timer> read_timer,std::unique_ptr<Timer> write_timer): this function puts the read timer and the write timer associated with this fd in the map called timers.This map is handy when we need to call timer callbacks and also update our priority queue.This map contains updated absolute time for the read and the write timeout.
+->run(): function to run the dispatcher so it keeps listening and calling handlers in a loop.
+->void CallHandlers(int fd_bound,fd_set &readset,fd_set &writeset,int res): this function simply handles the HandleRead and HandleWrite for the set fds after returning from select system call.
+->Socket* getSocket_ptr(int fd): This function returns a pointer to the socket object pointed to by fd.I am using this because we need a pointer to the connection socket object that we need to use in the std::bind() call to set the callback to call the appropriate function of the class pointed to by this(Socket*) pointer.
+->void register_policy(int fd,std::unique_ptr<TimerPolicy> timer_policy): This function maps the fd's with the unique pointer to the policy for this object. For now i have EnableTimer Policy and DisableTimer Policy.///////Is it fine to keep a pointer to the policy or should we store policy objects?////////
+
+Concept of Session:
+
+We establish sessions in the beginning even before any connection socket is registered. The idea of session is to associate each connection object with one session. A session can have zero or no connection associated with it. The session stores a buffer that will store all the execs for this session. This is done to make sure that if a client disconnects and connects again with the same client token, then we are able to hand up to him, the previous execs.
+->Pointer to the connection socket
+->buffer string
+
+Socket:
+Could be any socket(listening socket or any type of connection socket like LineReverseSocket or MessageRecieveSocket)
+
+ListenSocket:
+ Calls socket,bind and listen
+ HandleRead calls accept
+ Registers the socket
+ Registers the timers related to this socket
+ Registers the policies for each socket
+
+LineReverseSocket:
+ Just reads via read() system call, finds the newlines, reverses the line and appends it in the write buffer. 
+
