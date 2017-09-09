@@ -18,6 +18,18 @@ enum class MessageType : int32_t {
   EXEC,
   PING,
   PONG,
+  LOGOUT,
+};
+
+enum class NewOrderType : int32_t {
+  MARKET_ORDER,
+  LIMIT_ORDER,
+};
+
+enum class ExecType : int32_t {
+  PARTIAL_FILL,
+  COMPLETE_FILL,
+  REJECT, //in case of market orders
 };
 
 using order_id_t = uint32_t;
@@ -35,6 +47,7 @@ struct NewOrder {
   uint32_t symbol;
   order_id_t order_id;
   Side side;
+  NewOrderType type;
 } __attribute__((packed));
 
 //static_assert(sizeof(OrderMessage) == 21, "Problem with stucture layout");
@@ -53,7 +66,8 @@ struct Exec {
   uint32_t qty;
   uint32_t symbol;
   Side side;
-};
+  ExecType type;
+}__attribute__((packed));
 
 struct Login {
   uint64_t client_token;

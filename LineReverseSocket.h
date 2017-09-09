@@ -17,6 +17,7 @@ public:
     m_fd = fd;
   }
 
+  //Just for testing
   HandlerResult PrepareHeartbeat()
   {
       std::cout << "Preparing Heartbeat from Timer callback" << std::endl;

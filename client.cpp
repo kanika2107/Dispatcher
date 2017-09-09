@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <cctype>
+#include <cassert>
 #include <ctime>
 #include <cstdlib>
 #include <cstring>
@@ -44,14 +45,27 @@ int listen_socket(uint16_t portno) {
 
   char* msg_header1 = reinterpret_cast<char*>(&msgheader1);
   char* login_message = reinterpret_cast<char*>(&loginmessage);
-  struct iovec iov1[2];
+  struct iovec iov1[1];
   ssize_t nwritten;
   iov1[0].iov_base = msg_header1;
-  iov1[0].iov_len = sizeof(msgheader1);
-  iov1[1].iov_base = login_message;
-  iov1[1].iov_len = sizeof(loginmessage);
-  nwritten = writev(fd,iov1,2);
-  //std::cout << nwritten << std::endl; 
+  iov1[0].iov_len = 12;
+  nwritten = writev(fd,iov1,1);
+  std::cout << nwritten << std::endl;
+  sleep(0.5);
+  iov1[0].iov_base = msg_header1+12;
+  iov1[0].iov_len = sizeof(msgheader1)-12;
+  nwritten = writev(fd,iov1,1);
+  std::cout << nwritten << std::endl;
+  sleep(0.5);
+  iov1[0].iov_base = login_message;
+  iov1[0].iov_len = 10;
+  nwritten = writev(fd,iov1,1);
+  std::cout << nwritten << std::endl; 
+  sleep(0.5);
+  iov1[0].iov_base = login_message+10;
+  iov1[0].iov_len = sizeof(loginmessage)-10;
+  nwritten = writev(fd,iov1,1);
+  std::cout << nwritten << std::endl; 
   if(nwritten<0) err(2,"writev failed");
 
 
@@ -67,22 +81,8 @@ int listen_socket(uint16_t portno) {
     iovcnt2 = sizeof(iov2)/sizeof(struct iovec);
     bytes_read = readv(fd,iov2,iovcnt2);
     MessageHeader* msgheader2 = reinterpret_cast<MessageHeader*>(msg_header2);
-    char dump[msgheader2->size];
-    iov2[0].iov_base = dump;
-    iov2[0].iov_len  = sizeof(dump);
-    iovcnt2 = sizeof(iov2)/sizeof(struct iovec);
-    bytes_read = readv(fd,iov2,iovcnt2);
-    //std::cout << bytes_read << std::endl;
-    if(bytes_read<0) err(2,"readv failed");
-    //Read the header   
-    if(msgheader2->type==MessageType::LOGIN_SUCCESS)
-    {
-      std::cout << "Recieved Login Successful from server" << std::endl;
-    }
-    else if(msgheader2->type==MessageType::LOGIN_FAILURE)
-    {
-      std::cout << "Recieved Login failure from server" << std::endl;
-    }
+    assert(msgheader2->type==MessageType::LOGIN_SUCCESS);
+    
 
 
    // sleep(4);
@@ -133,7 +133,7 @@ int listen_socket(uint16_t portno) {
 
     //sleep(4);
 /////////////////////////////////////////////////PING//////////////////////////////////////
-    struct iovec iov3[2];
+  /*  struct iovec iov3[2];
    
   srand (time(NULL));
   struct MessageHeader msgheader3;
@@ -143,7 +143,6 @@ int listen_socket(uint16_t portno) {
 
   struct Ping pingmessage;
   pingmessage.cookie=rand()%100;
-  std::cout << pingmessage.cookie << std::endl;
 
   iov3[0].iov_base = reinterpret_cast<char*>(&msgheader3);
   iov3[0].iov_len = sizeof(msgheader3);
@@ -172,12 +171,13 @@ int listen_socket(uint16_t portno) {
     std::cout << bytes_read << std::endl;
     if(bytes_read<0) err(2,"readv failed");
     //Read the header
-   
-    std::cout << msgheader4->size << std::endl;
+    
     if(msgheader4->type==MessageType::PONG) 
     {
+
     	Pong* pongmessage = reinterpret_cast<Pong*>(buffer);
-    	std::cout << pongmessage->cookie << std::endl;
+      std::cout << pongmessage->cookie << std::endl;
+      assert(pingmessage.cookie==pongmessage->cookie);
     }
 
     // sleep(1);
@@ -205,7 +205,6 @@ int listen_socket(uint16_t portno) {
   iov5[1].iov_base = new_order;
   iov5[1].iov_len = sizeof(neworder);
   nwritten = writev(fd,iov5,2);
-  std::cout << nwritten << std::endl; 
   if(nwritten<0) err(2,"writev failed");
   //sleep(1);
 
@@ -224,28 +223,15 @@ int listen_socket(uint16_t portno) {
     iovcnt6 = sizeof(iov6)/sizeof(struct iovec);
     bytes_read = readv(fd,iov6,iovcnt6);
     if(bytes_read<0) err(2,"readv failed");
-    //Read the header
-    if(msgheader6->type==MessageType::ORDER_NACK)
-    {
-    	Nack* nackmessage = reinterpret_cast<Nack*>(buffer6);
-    	//std::cout << nackmessage->order_id << std::endl;
-    }
 
-     else if(msgheader6->type==MessageType::ORDER_ACK)
-    {
-    	Ack* ackmessage = reinterpret_cast<Ack*>(buffer6);
-    	std::cout << ackmessage->order_id << std::endl;
-    }
+    assert(msgheader6->type==MessageType::ORDER_ACK);
+    Ack* ackmessage = reinterpret_cast<Ack*>(buffer6);
+    assert(ackmessage->order_id==12);
 
-    else if(msgheader6->type==MessageType::EXEC)
-    {
-      Exec* execmessage = reinterpret_cast<Exec*>(buffer6);
-      //std::cout << execmessage->order_id << std::endl;
-    }
-
+    
     sleep(1);
     //sleep(5);
-    struct iovec iov7[1];
+  /*  struct iovec iov7[1];
     char msg_header7[sizeof(MessageHeader)];
     iov7[0].iov_base = msg_header7;
     iov7[0].iov_len  = sizeof(msg_header7);
@@ -279,7 +265,7 @@ int listen_socket(uint16_t portno) {
     {
       Exec* execmessage = reinterpret_cast<Exec*>(buffer7);
       std::cout << execmessage->order_id << std::endl;
-    }
+    }*/
 
   }
 
